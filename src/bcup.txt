@@ -1,0 +1,98 @@
+#include <Arduino.h>
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEClient.h>
+#include <BLE2902.h>
+
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+static BLEUUID serviceUUID(SERVICE_UUID);
+static BLEUUID charUUID(CHARACTERISTIC_UUID);
+
+bool doConnect = false;
+bool connected = false;
+bool doScan = false;
+BLEAdvertisedDevice* myDevice;
+
+class MyClientCallback : public BLEClientCallbacks {
+  void onConnect(BLEClient* pclient) {
+    connected = true;
+  }
+
+  void onDisconnect(BLEClient* pclient) {
+    connected = false;
+  }
+};
+
+class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
+  void onResult(BLEAdvertisedDevice advertisedDevice) {
+    if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceUUID)) {
+      BLEDevice::getScan()->stop();
+      myDevice = new BLEAdvertisedDevice(advertisedDevice);
+      doConnect = true;
+      doScan = true;
+    }
+  }
+};
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(2, OUTPUT);
+  digitalWrite(2, LOW);
+  BLEDevice::init("");
+
+  BLEScan* pBLEScan = BLEDevice::getScan();
+  pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+  pBLEScan->setInterval(1349);
+  pBLEScan->setWindow(449);
+  pBLEScan->setActiveScan(true);
+  pBLEScan->start(5, false);
+}
+
+void loop() {
+  if (doConnect) {
+    BLEClient* pClient = BLEDevice::createClient();
+    pClient->setClientCallbacks(new MyClientCallback());
+
+    pClient->connect(myDevice);
+    Serial.println("Connected to server");
+
+    BLERemoteService* pRemoteService = pClient->getService(serviceUUID);
+    if (pRemoteService == nullptr) {
+      Serial.print("Failed to find our service UUID: ");
+      Serial.println(serviceUUID.toString().c_str());
+      pClient->disconnect();
+      return;
+    }
+
+    BLERemoteCharacteristic* pRemoteCharacteristic = pRemoteService->getCharacteristic(charUUID);
+    if (pRemoteCharacteristic == nullptr) {
+      Serial.print("Failed to find our characteristic UUID: ");
+      Serial.println(charUUID.toString().c_str());
+      pClient->disconnect();
+      return;
+    }
+
+    if (pRemoteCharacteristic->canNotify()) {
+      pRemoteCharacteristic->registerForNotify([](BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
+        uint32_t receivedValue = *(uint32_t*)pData;
+        Serial.print("Received value: ");
+        Serial.println(receivedValue);
+
+        if (receivedValue % 100 == 0) {
+          digitalWrite(2, !digitalRead(2)); // Toggle pin 2
+        }
+      });
+    }
+
+    doConnect = false;
+  }
+
+  if (doScan) {
+    BLEDevice::getScan()->start(0);
+    doScan = false;
+  }
+
+  
+}
