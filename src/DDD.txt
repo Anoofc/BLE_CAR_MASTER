@@ -1,0 +1,318 @@
+#include <Arduino.h>
+#define RIGHT_PWM_R  22
+#define RIGHT_PWM_L  23
+#define LEFT_PWM_R   5
+#define LEFT_PWM_L   17
+
+#define RIGHT_EN_R  27   
+#define RIGHT_EN_L  26
+#define LEFT_EN_R  19
+#define LEFT_EN_L  18
+
+#define DIR_R  25
+#define DIR_L  33
+
+
+
+
+#define BLYNK_TEMPLATE_ID   "TMPL3jwOi2AHZ"
+#define BLYNK_TEMPLATE_NAME "ESPCAR"
+#define BLYNK_AUTH_TOKEN    "6F6ZqPLHR2mPxxGz7HeIO0etcTlv4Y1r"
+
+/* Comment this out to disable prints and save space */
+#define BLYNK_PRINT Serial
+
+
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <BlynkSimpleEsp32.h>
+
+// Your WiFi credentials.
+// Set password to "" for open networks.
+char ssid[] = "DYNAMIC";
+char pass[] = "kinetics@ITS";
+
+// This function will be called every time Slider Widget
+// in Blynk app writes values to the Virtual Pin V1
+BLYNK_WRITE(V1)
+{
+  int xValue = param.asInt(); // assigning incoming value from pin V1 to a variable
+  if (xValue > 255){
+    xValue=  map(xValue, 255, 512, 0, 170);
+    Serial.println(xValue);
+    analogWrite(RIGHT_PWM_R, xValue);
+    analogWrite(RIGHT_PWM_L, 0);
+    analogWrite(LEFT_PWM_R, xValue);
+    analogWrite(LEFT_PWM_L, 0);
+  }
+  else if (xValue <= 255){
+    xValue=  map(xValue, 0, 255, 170, 0);
+    Serial.println(xValue);
+    analogWrite(RIGHT_PWM_R, 0);
+    analogWrite(RIGHT_PWM_L, xValue);
+    analogWrite(LEFT_PWM_R, 0);
+    analogWrite(LEFT_PWM_L, xValue);
+  }
+
+  
+  
+}
+BLYNK_WRITE(V0)
+{
+  int yValue = param.asInt(); // assigning incoming value from pin V1 to a variable
+  if (yValue > 255){
+    yValue=  map(yValue, 255, 512, 0, 150);
+    Serial.println(yValue);
+    analogWrite(DIR_R,yValue);
+    analogWrite(DIR_L,0);
+
+  }
+  else if (yValue <= 255){
+    yValue=  map(yValue, 0, 255, 150, 0);
+    Serial.println(yValue);
+    analogWrite(DIR_R,0);
+    analogWrite(DIR_L,yValue);
+  }
+  // process received value
+}
+
+void setup()
+{
+  // Debug console
+  Serial.begin(9600);
+  pinMode(RIGHT_PWM_R, OUTPUT);
+  pinMode(RIGHT_PWM_L, OUTPUT);
+  pinMode(LEFT_PWM_R, OUTPUT);
+  pinMode(LEFT_PWM_L, OUTPUT);
+
+  pinMode(RIGHT_EN_R, OUTPUT);
+  pinMode(RIGHT_EN_L, OUTPUT);
+  pinMode(LEFT_EN_R, OUTPUT);
+  pinMode(LEFT_EN_L, OUTPUT);
+  pinMode(DIR_R, OUTPUT);
+  pinMode(DIR_L, OUTPUT);
+
+  digitalWrite(RIGHT_EN_R, HIGH);
+  digitalWrite(RIGHT_EN_L, HIGH);
+  digitalWrite(LEFT_EN_R, HIGH);
+  digitalWrite(LEFT_EN_L, HIGH);
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+  // You can also specify server:
+  //Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass, "blynk.cloud", 80);
+  //Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass, IPAddress(192,168,1,100), 8080);
+}
+
+void loop()
+{
+  Blynk.run();
+}
+
+
+
+
+#define RIGHT_PWM_R  22
+#define RIGHT_PWM_L  23
+#define LEFT_PWM_R   5
+#define LEFT_PWM_L   17
+
+#define RIGHT_EN_R  27   
+#define RIGHT_EN_L  26
+#define LEFT_EN_R  19
+#define LEFT_EN_L  18
+
+
+#define DIR_R  25
+#define DIR_L  33
+
+#include <Arduino.h>
+#include "BluetoothSerial.h"
+
+
+BluetoothSerial SerialBT;
+
+void forward(){
+    for (int i = 0; i < 200; i++){
+        // digitalWrite(RIGHT_EN_R, HIGH);
+        // digitalWrite(LEFT_EN_R, HIGH);
+        // digitalWrite(RIGHT_EN_L, LOW);
+        // digitalWrite(LEFT_EN_L, LOW);
+
+        analogWrite(RIGHT_PWM_R, i);
+        analogWrite(RIGHT_PWM_L, 0);
+        analogWrite(LEFT_PWM_R, i);
+        analogWrite(LEFT_PWM_L, 0);
+        delay(4);
+    }
+}
+void backward(){
+    for (int i = 0; i < 200; i++){
+        // digitalWrite(RIGHT_EN_R, LOW);
+        // digitalWrite(RIGHT_EN_L, HIGH);
+        // digitalWrite(LEFT_EN_R, LOW);
+        // digitalWrite(LEFT_EN_L, HIGH);
+
+        analogWrite(RIGHT_PWM_R, 0);
+        analogWrite(RIGHT_PWM_L, i);
+        analogWrite(LEFT_PWM_R, 0);
+        analogWrite(LEFT_PWM_L, i);
+        delay(4);
+    }
+}
+
+void right(){
+    for (int i = 0; i < 100; i++){
+        // digitalWrite(RIGHT_EN_R, HIGH);
+        // digitalWrite(LEFT_EN_R, LOW);
+        // digitalWrite(RIGHT_EN_L, LOW);
+        // digitalWrite(LEFT_EN_L, HIGH);
+        
+        analogWrite(RIGHT_PWM_R, i);
+        analogWrite(RIGHT_PWM_L, 0);
+        analogWrite(LEFT_PWM_R, 0);
+        analogWrite(LEFT_PWM_L, i);
+        delay(4);
+    }
+    
+}
+
+void left(){
+    for (int i = 0; i < 100; i++){
+        // digitalWrite(RIGHT_EN_R, LOW);
+        // digitalWrite(LEFT_EN_R, HIGH);
+        // digitalWrite(RIGHT_EN_L, HIGH);
+        // digitalWrite(LEFT_EN_L, LOW);
+        
+        analogWrite(RIGHT_PWM_R, 0);
+        analogWrite(RIGHT_PWM_L, i);
+        analogWrite(LEFT_PWM_R, i);
+        analogWrite(LEFT_PWM_L, 0);
+        delay(4);
+    }
+}
+void stop_backward(){
+    for (int i = 200; i >0; i--){
+        // digitalWrite(RIGHT_EN_R, LOW);
+        // digitalWrite(RIGHT_EN_L, HIGH);
+        // digitalWrite(LEFT_EN_R, LOW);
+        // digitalWrite(LEFT_EN_L, HIGH);
+        
+        analogWrite(RIGHT_PWM_R, 0);
+        analogWrite(RIGHT_PWM_L, i);
+        analogWrite(LEFT_PWM_R, 0);
+        analogWrite(LEFT_PWM_L, i);
+        delay(4);
+    }
+    
+}
+void stop_forward(){
+    for (int i = 200; i >0; i--){
+        // digitalWrite(RIGHT_EN_R, HIGH);
+        // digitalWrite(LEFT_EN_R, HIGH);
+        // digitalWrite(RIGHT_EN_L, LOW);
+        // digitalWrite(LEFT_EN_L, LOW);
+        
+        analogWrite(RIGHT_PWM_R, i);
+        analogWrite(RIGHT_PWM_L, 0);
+        analogWrite(LEFT_PWM_R, i);
+        analogWrite(LEFT_PWM_L, 0);
+        delay(4);
+    }
+    
+}
+void stop_left(){
+    for (int i = 100; i >0; i--){
+        // digitalWrite(RIGHT_EN_R, LOW);
+        // digitalWrite(LEFT_EN_R, HIGH);
+        // digitalWrite(RIGHT_EN_L, HIGH);
+        // digitalWrite(LEFT_EN_L, LOW);
+        
+        analogWrite(RIGHT_PWM_R, 0);
+        analogWrite(RIGHT_PWM_L, i);
+        analogWrite(LEFT_PWM_R, i);
+        analogWrite(LEFT_PWM_L, 0);
+        delay(4);
+    }
+    
+}   
+void stop_right(){
+    for (int i = 100; i >0; i--){
+        // digitalWrite(RIGHT_EN_R, HIGH);
+        // digitalWrite(LEFT_EN_R, LOW);
+        // digitalWrite(RIGHT_EN_L, LOW);
+        // digitalWrite(LEFT_EN_L, HIGH);
+        
+        analogWrite(RIGHT_PWM_R, i);
+        analogWrite(RIGHT_PWM_L, 0);
+        analogWrite(LEFT_PWM_R, 0);
+        analogWrite(LEFT_PWM_L, i);
+        delay(4);
+    }
+    
+}
+
+
+void setup()
+{
+    Serial.begin(9600);
+    pinMode(RIGHT_PWM_R, OUTPUT);
+    pinMode(RIGHT_PWM_L, OUTPUT);
+    pinMode(LEFT_PWM_R, OUTPUT);
+    pinMode(LEFT_PWM_L, OUTPUT);
+
+    pinMode(RIGHT_EN_R, OUTPUT);
+    pinMode(RIGHT_EN_L, OUTPUT);
+    pinMode(LEFT_EN_R, OUTPUT);
+    pinMode(LEFT_EN_L, OUTPUT);
+
+    pinMode(DIR_R, OUTPUT);
+    pinMode(DIR_L, OUTPUT);
+
+    digitalWrite(RIGHT_EN_R, HIGH);
+    digitalWrite(RIGHT_EN_L, HIGH);
+    digitalWrite(LEFT_EN_R, HIGH);
+    digitalWrite(LEFT_EN_L, HIGH);
+
+    SerialBT.begin("ESP32_CAR"); // Bluetooth device name
+}
+
+void loop()
+{
+
+    if (SerialBT.available())
+    {
+        char data = SerialBT.read();
+        Serial.println(data);
+        if (data == 'F')
+        {
+            forward();
+        }
+        if (data == 'B')
+        {
+            backward();
+        }
+        if (data == 'L')
+        {
+            left();
+        }
+        if (data == 'R')
+        {
+            right();
+        }
+        if (data == 'W')
+        {
+            stop_forward();
+        }
+        if (data == 'X')
+        {
+            stop_backward();
+        }
+        if (data == 'Y')
+        {
+            stop_right();
+        }
+        if (data == 'Z')
+        {
+            stop_left();
+        }
+    }
+}
