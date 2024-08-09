@@ -1,4 +1,4 @@
-
+#define DEBUG 0
 #define RIGHT_PWM_R  22
 #define RIGHT_PWM_L  23
 #define LEFT_PWM_R   5
@@ -13,14 +13,19 @@
 #define DIR_R  25
 #define DIR_L  33
 
+
+
 #include <Arduino.h>
 #include "BluetoothSerial.h"
 
+uint8_t speed = 150;
+uint8_t prev_speed = 150;
+char prev_data = 'U';
 
 BluetoothSerial SerialBT;
 
 void forward(){
-    for (int i = 0; i < 150; i++){
+    for (int i = 0; i < speed; i++){
         // digitalWrite(RIGHT_EN_R, HIGH);
         // digitalWrite(LEFT_EN_R, HIGH);
         // digitalWrite(RIGHT_EN_L, LOW);
@@ -34,7 +39,7 @@ void forward(){
     }
 }
 void backward(){
-    for (int i = 0; i < 150; i++){
+    for (int i = 0; i < speed; i++){
         // digitalWrite(RIGHT_EN_R, LOW);
         // digitalWrite(RIGHT_EN_L, HIGH);
         // digitalWrite(LEFT_EN_R, LOW);
@@ -50,15 +55,15 @@ void backward(){
 
 void right(){
   analogWrite(DIR_R, 0);
-  analogWrite(DIR_L, 170);  
+  analogWrite(DIR_L, 200);  
 }
 
 void left(){
-    analogWrite(DIR_R, 170);
+    analogWrite(DIR_R, 200);
   analogWrite(DIR_L, 0);  
 }
 void stop_backward(){
-    for (int i = 150; i >0; i--){
+    for (int i = speed; i >0; i--){
         // digitalWrite(RIGHT_EN_R, LOW);
         // digitalWrite(RIGHT_EN_L, HIGH);
         // digitalWrite(LEFT_EN_R, LOW);
@@ -73,7 +78,7 @@ void stop_backward(){
     
 }
 void stop_forward(){
-    for (int i = 150; i >0; i--){
+    for (int i = speed; i >0; i--){
         // digitalWrite(RIGHT_EN_R, HIGH);
         // digitalWrite(LEFT_EN_R, HIGH);
         // digitalWrite(RIGHT_EN_L, LOW);
@@ -88,13 +93,13 @@ void stop_forward(){
     
 }
 void stop_left(){
-  analogWrite(DIR_R, 0);
-  analogWrite(DIR_L, 0);  
+    analogWrite(DIR_R, 0);
+    analogWrite(DIR_L, 0);  
     
 }   
 void stop_right(){
     analogWrite(DIR_R, 0);
-  analogWrite(DIR_L, 0);  
+    analogWrite(DIR_L, 0);  
     
 }
 
@@ -129,38 +134,95 @@ void loop()
     if (SerialBT.available())
     {
         char data = SerialBT.read();
-        Serial.println(data);
+        if (DEBUG)(Serial.println(data));
+        
         if (data == 'F')
         {
             forward();
+            prev_data = data;
         }
-        if (data == 'B')
+        else if (data == 'B')
         {
             backward();
+            prev_data = data;
         }
-        if (data == 'L')
+        else if (data == 'L')
         {
             left();
         }
-        if (data == 'R')
+        else if (data == 'R')
         {
             right();
         }
-        if (data == 'W')
+        else if (data == 'W')
         {
             stop_forward();
+            prev_data = data;
         }
-        if (data == 'X')
+        else if (data == 'X')
         {
             stop_backward();
+            prev_data = data;
         }
-        if (data == 'Y')
+        else if (data == 'Y')
         {
             stop_right();
         }
-        if (data == 'Z')
+        else if (data == 'Z')
         {
             stop_left();
+        }
+        else if (data == 'M' && speed <= 240)
+        {
+            speed +=10;
+            if (DEBUG)(Serial.println(speed));
+            if (prev_data == 'F'){
+                for (int i = prev_speed; i < speed; i++){
+
+                analogWrite(RIGHT_PWM_R, i);
+                analogWrite(RIGHT_PWM_L, 0);
+                analogWrite(LEFT_PWM_R, i);
+                analogWrite(LEFT_PWM_L, 0);
+                delay(4);
+            }           
+                
+        }
+            else if (prev_data == 'B'){
+                for (int i = prev_speed; i < speed; i++){
+                    analogWrite(RIGHT_PWM_R, 0);
+                    analogWrite(RIGHT_PWM_L, i);
+                    analogWrite(LEFT_PWM_R, 0);
+                    analogWrite(LEFT_PWM_L, i);
+                    delay(4);
+                }
+                
+            }
+        }
+        else if (data == 'N' && speed > 150)
+        {
+            speed -=10;
+            if (DEBUG)(Serial.println(speed));
+            if (prev_data == 'F'){
+                for (int i = prev_speed; i > speed; i--){
+                    analogWrite(RIGHT_PWM_R, i);
+                    analogWrite(RIGHT_PWM_L, 0);
+                    analogWrite(LEFT_PWM_R, i);
+                    analogWrite(LEFT_PWM_L, 0);
+                    delay(4);
+                }
+                
+            }
+            else if (prev_data == 'B'){
+                for (int i = prev_speed; i > speed; i--){
+                    analogWrite(RIGHT_PWM_R, 0);
+                    analogWrite(RIGHT_PWM_L, i);
+                    analogWrite(LEFT_PWM_R, 0);
+                    analogWrite(LEFT_PWM_L, i);
+                    delay(4);
+                }
+                
+            }
+            prev_speed = speed;
         }
     }
 }
